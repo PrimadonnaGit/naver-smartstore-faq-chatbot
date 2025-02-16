@@ -38,7 +38,7 @@ class SmartStoreChatService(ChatService):
         chat_history: list[Message],
         knowledge_context: str,
     ) -> AsyncGenerator[str, None]:
-        messages = prompts.CHAT_RESPONSE.format(
+        messages = prompts.PT_FAQ_QUESTION.format(
             query=query,
             chat_history=self._format_chat_history(chat_history),
             context=knowledge_context,
@@ -93,15 +93,22 @@ class SmartStoreChatService(ChatService):
         yield await self.get_follow_up_message(message, complete_answer)
 
     async def get_follow_up_message(self, query: str, answer: str) -> ChatResponse:
-        messages = prompts.FOLLOW_UP.format(query=query, answer=answer)
-        follow_up = await self.llm_service.generate_completion(
-            messages=messages, temperature=0.7
+        follow_up_messages = prompts.PT_FOLLOW_UP_QUESTIONS.format(
+            query=query, answer=answer
         )
-        return ChatResponse(message="[DONE]", follow_up=follow_up)
+        follow_up_response = await self.llm_service.generate_completion(
+            messages=follow_up_messages, temperature=0.7
+        )
+
+        follow_ups = [q.strip() for q in follow_up_response.split("\n") if q.strip()][
+            :2
+        ]
+
+        return ChatResponse(message="[DONE]", follow_ups=follow_ups)
 
     async def is_smartstore_related(self, query: str) -> bool:
 
-        messages = prompts.SMARTSTORE_CHECK.format(query=query)
+        messages = prompts.PT_QUESTION_VALIDATION_CHECK.format(query=query)
         response = await self.llm_service.generate_completion(
             messages=messages, temperature=0.1
         )

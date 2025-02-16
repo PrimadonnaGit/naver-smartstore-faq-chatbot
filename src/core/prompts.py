@@ -15,7 +15,7 @@ class PromptTemplate:
 
 
 class PromptTemplates:
-    SMARTSTORE_CHECK = PromptTemplate(
+    PT_QUESTION_VALIDATION_CHECK = PromptTemplate(
         [
             Message(
                 role="system",
@@ -25,7 +25,7 @@ class PromptTemplates:
         ]
     )
 
-    CHAT_RESPONSE = PromptTemplate(
+    PT_FAQ_QUESTION = PromptTemplate(
         [
             Message(
                 role="system",
@@ -38,35 +38,16 @@ class PromptTemplates:
         ]
     )
 
-    FOLLOW_UP = PromptTemplate(
+    PT_FOLLOW_UP_QUESTIONS = PromptTemplate(
         [
             Message(
                 role="system",
-                content="당신은 네이버 스마트스토어 고객 지원 전문가입니다. 이전 질의응답을 바탕으로 사용자가 추가로 궁금해할 만한 자연스러운 후속 질문 하나를 생성해주세요.",
+                content="당신은 네이버 스마트스토어 고객 지원 전문가입니다.\n"
+                "이전 질의응답을 바탕으로 사용자가 추가로 궁금해할 만한 자연스러운 후속 질문 2개 생성해주세요.\n"
+                "각 질문은 새로운 줄에 작성해주세요.",
             ),
-            Message(role="user", content="이전 질문: {query}"),
+            Message(role="assistant", content="이전 질문: {query}"),
             Message(role="assistant", content="{answer}"),
-            Message(
-                role="system",
-                content="위 대화를 바탕으로 사용자가 추가로 궁금해할 만한 자연스러운 후속 질문을 하나만 생성해주세요.",
-            ),
-        ]
-    )
-
-    CONTEXTUAL_RESPONSE = PromptTemplate(
-        [
-            Message(
-                role="system",
-                content="""당신은 네이버 스마트스토어 고객 지원 전문가입니다. 
-FAQ 데이터를 참고하여 친절하고 전문적으로 답변해주세요.
-
-답변시 유의사항:
-1. FAQ의 내용을 기반으로 하되, 자연스럽게 답변해주세요.
-2. 이전 대화 맥락을 고려해주세요.
-3. 모든 중요한 정보를 포함해주세요.
-4. 전문 용어는 쉽게 설명해주세요.""",
-            ),
-            Message(role="system", content="참고할 FAQ 정보:\n{similar_qa}"),
         ]
     )
 

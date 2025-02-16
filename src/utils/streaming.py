@@ -15,10 +15,11 @@ class StreamingJsonResponse:
     ) -> AsyncGenerator[str, None]:
         async for response in response_generator:
             if response.message == "[DONE]":
-                if response.follow_up:
-                    yield StreamingJsonResponse.format_sse(
-                        {"type": "follow_up", "content": response.follow_up}
-                    )
+                if response.follow_ups:
+                    for follow_up in response.follow_ups:
+                        yield StreamingJsonResponse.format_sse(
+                            {"type": "follow_up", "content": follow_up}
+                        )
                 yield StreamingJsonResponse.format_sse(
                     {"type": "done", "content": "[DONE]"}
                 )

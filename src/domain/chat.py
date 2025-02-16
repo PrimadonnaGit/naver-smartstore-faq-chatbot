@@ -11,5 +11,5 @@ class Message:
 @dataclass
 class ChatResponse:
     message: str
-    follow_up: str | None = None
+    follow_ups: list[str] | None = None
     metadata: dict | None = None
