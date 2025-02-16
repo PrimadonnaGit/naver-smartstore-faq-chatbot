@@ -1,225 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>네이버 스마트스토어 FAQ 챗봇</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
-    <style>
-        .page-content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .chat-container {
-            height: 500px;
-            overflow-y: auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fff;
-            margin-bottom: 20px;
-        }
-        .message {
-            margin-bottom: 16px;
-            max-width: 80%;
-        }
-        .user-message {
-            margin-left: auto;
-            background: #E3F2FD;
-            padding: 12px;
-            border-radius: 12px 12px 0 12px;
-        }
-        .bot-message {
-            background: #F5F5F5;
-            padding: 12px;
-            border-radius: 12px 12px 12px 0;
-        }
-        .follow-up {
-            background: #FFF3E0;
-            padding: 12px;
-            border-radius: 12px;
-            margin-top: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .follow-up:hover {
-            background: #FFE0B2;
-        }
-        .follow-up-icon {
-            vertical-align: middle;
-            font-size: 16px;
-            margin-right: 8px;
-        }
-        .input-container {
-            display: flex;
-            gap: 10px;
-        }
-        .mdl-textfield {
-            flex-grow: 1;
-        }
-        .message-text {
-            margin: 0;
-            white-space: pre-wrap;
-        }
-        .chat-header {
-            margin-bottom: 24px;
-        }
-        .mdl-card {
-            min-height: 0;
-            width: 100%;
-            margin-bottom: 24px;
-        }
-    </style>
-</head>
-<body>
-    <div class="mdl-layout mdl-js-layout">
-        <header class="mdl-layout__header">
-            <div class="mdl-layout__header-row">
-                <span class="mdl-layout-title">네이버 스마트스토어 FAQ 챗봇</span>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-gray-200 mx-auto">
+    <div class="rounded-lg shadow-sm overflow-hidden">
+        <div id="chat-container" class="h-[600px] overflow-y-auto p-4 space-y-4">
+            <!-- Messages -->
+        </div>
+        <div class="border-t p-4">
+            <div class="flex space-x-4">
+                <input type="text"
+                       id="message-input"
+                       class="flex-1 text-sm rounded-lg border-gray-300 px-5 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                       placeholder="메시지를 입력하세요...">
+                <button id="send-button"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    전송
+                </button>
             </div>
-        </header>
-        <main class="mdl-layout__content">
-            <div class="page-content">
-                <div class="mdl-card mdl-shadow--2dp">
-                    <div class="mdl-card__supporting-text">
-                        <div class="chat-container" id="chat-container"></div>
-                        <div class="input-container">
-                            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                                <input class="mdl-textfield__input" type="text" id="message-input">
-                                <label class="mdl-textfield__label" for="message-input">메시지를 입력하세요...</label>
-                            </div>
-                            <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="sendMessage()">
-                                <i class="material-icons">send</i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
+</div>
+{% endblock %}
 
-    <script>
-        const chatContainer = document.getElementById('chat-container');
-        const messageInput = document.getElementById('message-input');
-
-        function createMessageElement(message, isUser = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-
-            const messageText = document.createElement('pre');
-            messageText.className = 'message-text';
-            messageText.textContent = message;
-
-            messageDiv.appendChild(messageText);
-            return messageDiv;
-        }
-
-        function createFollowUpElement(question) {
-            const followUpDiv = document.createElement('div');
-            followUpDiv.className = 'follow-up';
-            followUpDiv.innerHTML = `
-                <i class="material-icons follow-up-icon">help_outline</i>
-                <span>${question}</span>
-            `;
-            followUpDiv.onclick = () => {
-                messageInput.value = question;
-                messageInput.parentElement.classList.add('is-dirty');
-                sendMessage();
-            };
-            return followUpDiv;
-        }
-
-        function addMessage(message, isUser = false) {
-            const messageElement = createMessageElement(message, isUser);
-            chatContainer.appendChild(messageElement);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return messageElement;
-        }
-
-        let currentBotMessage = null;
-        let currentBotMessageText = null;
-
-        async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message) return;
-
-            addMessage(message, true);
-            messageInput.value = '';
-            messageInput.parentElement.classList.remove('is-dirty');
-
-            try {
-                const response = await fetch('/api/v1/chat/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                currentBotMessage = document.createElement('div');
-                currentBotMessage.className = 'message bot-message';
-                currentBotMessageText = document.createElement('pre');
-                currentBotMessageText.className = 'message-text';
-                currentBotMessage.appendChild(currentBotMessageText);
-                chatContainer.appendChild(currentBotMessage);
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-
-                    const text = decoder.decode(value);
-                    const lines = text.split('\n');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = JSON.parse(line.slice(6));
-
-                            if (data.type === 'follow_up') {
-                                const followUpElement = createFollowUpElement(data.content);
-                                currentBotMessage.appendChild(followUpElement);
-                            } else if (data.type === 'done') {
-                                currentBotMessage = null;
-                                currentBotMessageText = null;
-                            } else {
-                                await new Promise(resolve => setTimeout(resolve, 50));
-                                currentBotMessageText.textContent += data.content;
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                addMessage('오류가 발생했습니다. 다시 시도해주세요.', false);
-            }
-        }
-
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        // 페이지 로드 시 웰컴 메시지 요청
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const response = await fetch('/api/v1/chat/welcome');
-                if (!response.ok) {
-                    throw new Error('Welcome message request failed');
-                }
-
-                const data = await response.json();
-                addMessage(data.content, false);
-            } catch (error) {
-                console.error('Error:', error);
-                addMessage('웰컴 메시지를 불러오는데 실패했습니다.', false);
-            }
-        });
-    </script>
-</body>
-</html>
-
+{% block scripts %}
+<script src="/static/js/chat.js"></script>
+{% endblock %}
