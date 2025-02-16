@@ -244,3 +244,4 @@ chroma_persist/
 data/
 
 .env.*
+!.env.example
