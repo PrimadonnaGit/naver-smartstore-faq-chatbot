@@ -2,7 +2,6 @@ from openai import AsyncStream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from core.config import settings
-from core.prompts import prompts
 from infrastructure.openai.client import get_openai_client
 from interfaces.services.llm import LLMService
 
@@ -30,9 +29,3 @@ class OpenAIService(LLMService):
             return response
 
         return response.choices[0].message.content.strip()
-
-    async def is_smartstore_related(self, query: str) -> bool:
-
-        messages = prompts.SMARTSTORE_CHECK.format(query=query)
-        response = await self.generate_completion(messages=messages, temperature=0.1)
-        return response.strip().lower() == "true"

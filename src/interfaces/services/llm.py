@@ -13,7 +13,3 @@ class LLMService(ABC):
         stream: bool = False,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk] | str:
         pass
-
-    @abstractmethod
-    async def is_smartstore_related(self, query: str) -> bool:
-        pass

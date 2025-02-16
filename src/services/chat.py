@@ -32,7 +32,7 @@ class SmartStoreChatService(ChatService):
             [f"Q: {faq["question"]}\nA: {faq["answer"]}" for faq in faqs]
         )
 
-    async def _create_chat_completion(
+    async def create_chat_completion(
         self,
         query: str,
         chat_history: list[Message],
@@ -54,7 +54,7 @@ class SmartStoreChatService(ChatService):
         self, session_id: str, message: str
     ) -> AsyncGenerator[ChatResponse, None]:
         # 스마트스토어 관련 질문인지 확인
-        is_related = await self.llm_service.is_smartstore_related(message)
+        is_related = await self.is_smartstore_related(message)
         if not is_related:
             yield ChatResponse(message=NO_SMARTSTORE_MESSAGE)
             return
@@ -76,7 +76,7 @@ class SmartStoreChatService(ChatService):
 
         # 답변 생성 및 스트리밍
         answer_chunks = []
-        async for chunk in self._create_chat_completion(
+        async for chunk in self.create_chat_completion(
             query=message,
             chat_history=chat_history,
             knowledge_context=self._format_knowledge_context(similar_faqs),
@@ -90,14 +90,22 @@ class SmartStoreChatService(ChatService):
         await self.memory_repository.save_message(session_id, assistant_message)
 
         # 후속 질문 생성
-        follow_up_messages = prompts.FOLLOW_UP.format(
-            query=message, answer=complete_answer
-        )
-        follow_up = await self.llm_service.generate_completion(
-            messages=follow_up_messages, temperature=0.7
-        )
+        yield await self.get_follow_up_message(message, complete_answer)
 
-        yield ChatResponse(message="[DONE]", follow_up=follow_up)
+    async def get_follow_up_message(self, query: str, answer: str) -> ChatResponse:
+        messages = prompts.FOLLOW_UP.format(query=query, answer=answer)
+        follow_up = await self.llm_service.generate_completion(
+            messages=messages, temperature=0.7
+        )
+        return ChatResponse(message="[DONE]", follow_up=follow_up)
+
+    async def is_smartstore_related(self, query: str) -> bool:
+
+        messages = prompts.SMARTSTORE_CHECK.format(query=query)
+        response = await self.llm_service.generate_completion(
+            messages=messages, temperature=0.1
+        )
+        return response.strip().lower() == "true"
 
     async def get_welcome_message(self) -> ChatResponse:
         return ChatResponse(message=WELCOME_MESSAGE)
