@@ -9,6 +9,7 @@ from interfaces.repositories.memory import ChatMemoryRepository
 class RedisChatMemoryRepository(ChatMemoryRepository):
     def __init__(self, message_ttl: int = None):
         self.message_ttl = message_ttl or settings.REDIS_MESSAGE_TTL
+        self.max_messages = 20
 
     def _get_key(self, session_id: str) -> str:
         return f"chat:memory:{session_id}"
@@ -34,7 +35,7 @@ class RedisChatMemoryRepository(ChatMemoryRepository):
 
             async with redis.pipeline() as pipe:
                 await pipe.lpush(key, self._serialize_message(message))
-                await pipe.ltrim(key, 0, 99)  # 최근 100개 메시지만 유지
+                await pipe.ltrim(key, 0, self.max_messages - 1)
                 await pipe.expire(key, self.message_ttl)
                 await pipe.execute()
 

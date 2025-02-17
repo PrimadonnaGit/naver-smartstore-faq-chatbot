@@ -13,37 +13,68 @@ class PromptTemplate:
             for msg in self.messages
         ]
 
+
 class PromptTemplates:
-    PT_QUESTION_VALIDATION_CHECK = PromptTemplate(
+    PT_DIRECT_VALIDATION = PromptTemplate(
         [
             Message(
                 role="system",
-                content="당신은 네이버 스마트스토어 질문 분류 전문가입니다.\n"
-                "주어진 질문이 스마트스토어와 관련이 있는지 판단하고, 관련성 점수를 매겨주세요.\n\n"
-                "판단 기준:\n"
-                "1. 핵심 업무 관련 질문 (높은 관련성)\n"
-                "   - 상품 등록/관리: 상품 정보, 옵션, 재고, 이미지 등\n"
-                "   - 주문/배송 관리: 주문 확인, 발송, 배송 설정 등\n"
-                "   - 정산/매출 관리: 정산 주기, 매출 확인, 세금계산서 등\n"
-                "   - 스토어 운영: 스토어 디자인, 공지사항, 안내 설정 등\n\n"
-                "2. 마케팅/프로모션 관련 질문 (중간 관련성)\n"
-                "   - 광고 관리: 검색광고, 배너광고 등\n"
-                "   - 프로모션: 할인, 쿠폰, 이벤트 등\n"
-                "   - 성과 분석: 방문 통계, 매출 분석 등\n\n"
-                "3. 일반 문의 (낮은 관련성)\n"
-                "   - 계정/인증: 로그인, 사업자 인증 등\n"
-                "   - 기본 안내: 이용 방법, 수수료 등\n\n"
-                "4. 관련성 판단 방법\n"
-                "   - FAQ 내용과의 유사도 검토\n"
-                "   - 이전 대화 맥락 고려\n"
-                "   - 간접적 연관성 확인\n\n"
-                "응답 형식: [판단결과(true/false)],[신뢰도(0.0~1.0)]\n"
-                "예시:\n"
-                "- 상품 등록 방법 질문 → true,0.95\n"
-                "- 배송비 설정 문의 → true,0.90\n"
-                "- 일반적인 쇼핑 문의 → false,0.85\n\n"
-                "참고할 FAQ:\n{context}\n\n"
-                "이전 대화 기록:\n{chat_history}",
+                content="네이버 스마트스토어의 핵심 주제와의 직접적인 관련성을 판단해주세요.\n\n"
+                "핵심 주제:\n"
+                "1. 상품 관리\n"
+                "   - 상품 등록/수정\n"
+                "   - 옵션/재고 관리\n"
+                "   - 상품 노출/진열\n"
+                "2. 주문/배송 관리\n"
+                "   - 주문 확인/처리\n"
+                "   - 배송 설정/관리\n"
+                "   - 반품/교환 처리\n"
+                "3. 정산/매출\n"
+                "   - 정산 내역/주기\n"
+                "   - 매출 통계/분석\n"
+                "   - 세금계산서/부가세\n"
+                "4. 스토어 운영\n"
+                "   - 스토어 설정\n"
+                "   - 디자인/진열\n"
+                "   - 공지사항/안내\n\n"
+                "응답 형식: [true/false], [신뢰도 점수 0.0~1.0], [판단 근거]\n"
+                "예시: true, 0.95, 상품 등록 프로세스에 대한 직접적인 질문\n\n"
+                "FAQ 컨텍스트:\n{context}",
+            ),
+            Message(role="user", content="질문: {query}"),
+        ]
+    )
+
+    PT_INDIRECT_VALIDATION = PromptTemplate(
+        [
+            Message(
+                role="system",
+                content="스마트스토어와의 간접적인 관련성을 분석해주세요.\n\n"
+                "고려할 간접 주제:\n"
+                "1. 온라인 판매/창업\n"
+                "2. 고객 서비스/응대\n"
+                "3. 결제/금융\n"
+                "4. 상품 기획/소싱\n"
+                "5. 마케팅/프로모션\n\n"
+                "이전 대화:\n{chat_history}\n\n"
+                "응답 형식: [true/false], [신뢰도 점수 0.0~1.0], [판단 근거]",
+            ),
+            Message(role="user", content="질문: {query}"),
+        ]
+    )
+
+    PT_INTENT_VALIDATION = PromptTemplate(
+        [
+            Message(
+                role="system",
+                content="사용자 질문의 의도를 파악하고 스마트스토어 맥락으로의 전환 가능성을 분석해주세요.\n\n"
+                "분석 단계:\n"
+                "1. 원래 의도 파악\n"
+                "2. 스마트스토어 연관성 검토\n"
+                "3. 가능한 전환 방향 제시\n\n"
+                "이전 대화:\n{chat_history}\n\n"
+                "FAQ 컨텍스트:\n{context}\n\n"
+                "응답 형식: [true/false], [신뢰도 점수 0.0~1.0], [전환 방향/판단 근거]",
             ),
             Message(role="user", content="질문: {query}"),
         ]
@@ -112,5 +143,6 @@ class PromptTemplates:
             Message(role="assistant", content="현재 답변: {answer}"),
         ]
     )
+
 
 prompts = PromptTemplates()

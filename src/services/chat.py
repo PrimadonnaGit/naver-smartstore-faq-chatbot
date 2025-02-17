@@ -8,6 +8,8 @@ from interfaces.repositories.knowledge import KnowledgeBaseRepository
 from interfaces.repositories.memory import ChatMemoryRepository
 from interfaces.services.chat import ChatService
 from interfaces.services.llm import LLMService
+from interfaces.services.validator import QuestionValidatorService
+from utils.format import format_knowledge_context, format_chat_history
 
 logger = setup_logger(__name__)
 
@@ -18,22 +20,12 @@ class SmartStoreChatService(ChatService):
         llm_service: LLMService,
         memory_repository: ChatMemoryRepository,
         knowledge_repository: KnowledgeBaseRepository,
+        validator_service: QuestionValidatorService,
     ):
         self.llm_service = llm_service
+        self.validator_service = validator_service
         self.memory_repository = memory_repository
         self.knowledge_repository = knowledge_repository
-
-    def _format_chat_history(self, messages: list[Message]) -> str:
-        if not messages:
-            return ""
-        return "\n".join(
-            [f"{msg.role.capitalize()}: {msg.content}" for msg in messages]
-        )
-
-    def _format_knowledge_context(self, faqs: list[dict]) -> str:
-        return "\n\n".join(
-            [f"Q: {faq['question']}\nA: {faq['answer']}" for faq in faqs]
-        )
 
     async def create_chat_completion(
         self,
@@ -43,7 +35,7 @@ class SmartStoreChatService(ChatService):
     ) -> AsyncGenerator[str, None]:
         messages = prompts.PT_FAQ_QUESTION.format(
             query=query,
-            chat_history=self._format_chat_history(chat_history),
+            chat_history=format_chat_history(chat_history),
             context=knowledge_context,
         )
 
@@ -72,6 +64,7 @@ class SmartStoreChatService(ChatService):
         is_related = await self.is_smartstore_related(
             message, chat_history, similar_faqs
         )
+
         if not is_related:
             yield ChatResponse(message=NO_SMARTSTORE_MESSAGE)
             # 스마트스토어와 관련없는 질문이더라도 후속 질문은 생성
@@ -89,7 +82,7 @@ class SmartStoreChatService(ChatService):
 
         # 답변 생성 및 스트리밍
         answer_chunks = []
-        knowledge_context = self._format_knowledge_context(similar_faqs)
+        knowledge_context = format_knowledge_context(similar_faqs)
 
         async for chunk in self.create_chat_completion(
             query=message,
@@ -122,8 +115,8 @@ class SmartStoreChatService(ChatService):
         follow_up_messages = prompts.PT_FOLLOW_UP_QUESTIONS.format(
             query=query,
             answer=answer,
-            context=self._format_knowledge_context(similar_faqs),
-            chat_history=self._format_chat_history(chat_history),
+            context=format_knowledge_context(similar_faqs),
+            chat_history=format_chat_history(chat_history),
         )
 
         follow_up_response = await self.llm_service.generate_completion(
@@ -138,18 +131,10 @@ class SmartStoreChatService(ChatService):
     async def is_smartstore_related(
         self, query: str, chat_history: list[Message], similar_faqs: list[dict]
     ) -> bool:
-        messages = prompts.PT_QUESTION_VALIDATION_CHECK.format(
-            query=query,
-            chat_history=self._format_chat_history(chat_history),
-            context=similar_faqs,
+        result = await self.validator_service.validate_question(
+            query, chat_history, similar_faqs
         )
-        response = await self.llm_service.generate_completion(
-            messages=messages, temperature=0.1
-        )
-
-        is_related, confidence = response.strip().split(",")
-
-        return is_related == "true" if float(confidence) > 0.5 else True
+        return result.is_related
 
     async def get_welcome_message(self) -> ChatResponse:
         return ChatResponse(message=WELCOME_MESSAGE)

@@ -16,12 +16,12 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
     def __init__(self):
         self.client = ChromaClient.get_instance()
         self.embedding_function = (
-            DefaultEmbeddingFunction()
-            if settings.EMBEDDING_MODE == "default"
-            else OpenAIEmbeddingFunction(
+            OpenAIEmbeddingFunction(
                 api_key=settings.OPENAI_API_KEY,
                 model_name=settings.OPENAI_EMBEDDING_MODEL,
             )
+            if settings.EMBEDDING_MODE == "openai"
+            else DefaultEmbeddingFunction()
         )
         self.collection = self.client.get_or_create_collection(
             name=settings.CHROMA_COLLECTION_NAME,
