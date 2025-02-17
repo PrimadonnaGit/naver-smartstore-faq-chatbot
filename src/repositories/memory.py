@@ -45,7 +45,4 @@ class RedisChatMemoryRepository(ChatMemoryRepository):
             key = self._get_key(session_id)
             messages_json = await redis.lrange(key, 0, limit - 1)
 
-            return [
-                self._deserialize_message(msg_json)
-                for msg_json in reversed(messages_json)
-            ]
+            return [self._deserialize_message(msg_json) for msg_json in messages_json]

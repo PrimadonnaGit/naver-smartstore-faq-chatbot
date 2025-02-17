@@ -1,7 +1,6 @@
 from typing import Annotated
-from uuid import uuid4
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Header
 
 from repositories.knowledge import ChromaKnowledgeRepository
 from repositories.memory import RedisChatMemoryRepository
@@ -37,5 +36,7 @@ async def get_chat_service(
     )
 
 
-def get_session_id(session_id: str | None = None) -> str:
-    return session_id or str(uuid4())
+async def get_session_id(x_session_id: str | None = Header(None)) -> str:
+    if not x_session_id:
+        raise HTTPException(status_code=400, detail="Session ID is required")
+    return x_session_id

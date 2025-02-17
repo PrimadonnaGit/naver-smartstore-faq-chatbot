@@ -1,4 +1,3 @@
-import logging
 import pickle
 from contextlib import asynccontextmanager
 
@@ -8,10 +7,11 @@ from starlette.templating import Jinja2Templates
 
 from api.v1.router import api_v1_router
 from core.config import settings
+from core.logging import setup_logger
 from domain.knowledge import FAQ
 from repositories.knowledge import ChromaKnowledgeRepository
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 def load_faq_data(file_path: str = "data/faq_processed.pkl") -> list[FAQ]:
@@ -31,9 +31,7 @@ def load_faq_data(file_path: str = "data/faq_processed.pkl") -> list[FAQ]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Service finished initializing")
-    logger.info("Chat Manager 초기화")
-
+    logger.info("Service is starting up")
     try:
         # ChromaDB 초기화
         knowledge_repo = ChromaKnowledgeRepository()
@@ -49,13 +47,14 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    logger.info("Service is shutting down")
+    logger.info("Service is shutting down ...")
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
+    debug=settings.DEBUG,
 )
 
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)

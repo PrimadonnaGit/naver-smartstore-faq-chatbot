@@ -14,3 +14,8 @@ class ChatResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None
+
+
+class WelcomeResponse(BaseModel):
+    content: str
+    session_id: str

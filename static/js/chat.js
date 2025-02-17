@@ -6,6 +6,8 @@ class ChatUI {
         this.messageInput = document.getElementById('message-input');
         this.sendButton = document.getElementById('send-button');
 
+        this.sessionId = null;
+
         this.setupEventListeners();
         this.loadWelcomeMessage();
     }
@@ -60,6 +62,16 @@ class ChatUI {
         return followUpDiv;
     }
 
+    getOrCreateSessionId() {
+        let sessionId = localStorage.getItem('chat_session_id');
+        if (!sessionId) {
+            sessionId = crypto.randomUUID();
+            localStorage.setItem('chat_session_id', sessionId);
+        }
+        return sessionId;
+    }
+
+
     async sendMessage() {
         const message = this.messageInput.value.trim();
         if (!message) return;
@@ -72,6 +84,7 @@ class ChatUI {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Session-ID': this.sessionId
                 },
                 body: JSON.stringify({ message })
             });
@@ -102,6 +115,7 @@ class ChatUI {
                         if (data.type === 'follow_up') {
                             const followUpElement = this.createFollowUpElement(data.content);
                             this.chatContainer.appendChild(followUpElement);
+                            this.scrollToBottom();
                         } else if (data.type === 'done') {
                             currentBotMessage = null;
                             currentMessageText = null;
@@ -137,12 +151,14 @@ class ChatUI {
             }
 
             const data = await response.json();
+            this.sessionId = data.session_id; // 세션 ID 저장
             this.appendMessage(data.content, false);
         } catch (error) {
             console.error('Error:', error);
             this.appendMessage('웰컴 메시지를 불러오는데 실패했습니다.', false);
         }
     }
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -16,11 +16,15 @@ class ChatService(ABC):
         pass
 
     @abstractmethod
-    async def is_smartstore_related(self, message: str) -> bool:
+    async def is_smartstore_related(
+        self, message: str, chat_history: list[str]
+    ) -> bool:
         pass
 
     @abstractmethod
-    async def get_follow_up_message(self, query: str, answer: str) -> ChatResponse:
+    async def get_follow_up_message(
+        self, query: str, answer: str, chat_history: list[str], similar_faqs: list[dict]
+    ) -> ChatResponse:
         pass
 
     @abstractmethod

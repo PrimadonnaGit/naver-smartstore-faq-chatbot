@@ -18,11 +18,12 @@ class BaseAppSettings(BaseSettings):
 
     PROJECT_NAME: str = "naver-faq-chatbot"
     OPENAI_API_KEY: str
+    DEBUG: bool = False
 
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: Literal["test", "local", "production"]
 
-    DEBUG: bool = True
+    EMBEDDING_MODE: Literal["default", "openai"] = "openai"
 
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"

@@ -4,9 +4,12 @@ from chromadb.utils.embedding_functions.openai_embedding_function import (
 )
 
 from core.config import settings
+from core.logging import setup_logger
 from domain.knowledge import FAQ
 from infrastructure.chroma.client import ChromaClient
 from interfaces.repositories.knowledge import KnowledgeBaseRepository
+
+logger = setup_logger(__name__)
 
 
 class ChromaKnowledgeRepository(KnowledgeBaseRepository):
@@ -14,7 +17,7 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
         self.client = ChromaClient.get_instance()
         self.embedding_function = (
             DefaultEmbeddingFunction()
-            if settings.DEBUG
+            if settings.EMBEDDING_MODE == "default"
             else OpenAIEmbeddingFunction(
                 api_key=settings.OPENAI_API_KEY,
                 model_name=settings.OPENAI_EMBEDDING_MODEL,
@@ -58,4 +61,11 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
             )
             ids.append(f"faq_{i}")
 
-        self.collection.add(documents=documents, metadatas=metadatas, ids=ids)
+        batch_size = 1000
+        for i in range(0, len(documents), batch_size):
+            logger.info(f"Adding {i} ~ {i + batch_size} faqs")
+            self.collection.add(
+                documents=documents[i : i + batch_size],
+                metadatas=metadatas[i : i + batch_size],
+                ids=ids[i : i + batch_size],
+            )
