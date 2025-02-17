@@ -61,19 +61,17 @@ class SmartStoreChatService(ChatService):
             session_id, limit=10
         )
 
-        logger.debug(f"Chat history: {chat_history}")
-
         # 관련 FAQ 검색
-        similar_faqs = await self.knowledge_repository.find_similar(message)
-
-        logger.debug(f"Similar FAQs: {similar_faqs}")
+        similar_faqs = await self.knowledge_repository.find_similar(message, limit=10)
 
         # 사용자 메시지 저장
         user_message = Message(content=message, role="user")
         await self.memory_repository.save_message(session_id, user_message)
 
         # 스마트스토어 관련 질문인지 확인
-        is_related = await self.is_smartstore_related(message, chat_history)
+        is_related = await self.is_smartstore_related(
+            message, chat_history, similar_faqs
+        )
         if not is_related:
             yield ChatResponse(message=NO_SMARTSTORE_MESSAGE)
             # 스마트스토어와 관련없는 질문이더라도 후속 질문은 생성
@@ -81,7 +79,7 @@ class SmartStoreChatService(ChatService):
                 query=message,
                 answer="",
                 chat_history=chat_history,
-                similar_faqs=similar_faqs,
+                similar_faqs=similar_faqs[:3],
             )
             return
 
@@ -111,7 +109,7 @@ class SmartStoreChatService(ChatService):
             query=message,
             answer=complete_answer,
             chat_history=chat_history,
-            similar_faqs=similar_faqs,
+            similar_faqs=similar_faqs[:3],
         )
 
     async def get_follow_up_message(
@@ -138,10 +136,12 @@ class SmartStoreChatService(ChatService):
         return ChatResponse(message="[DONE]", follow_ups=follow_ups)
 
     async def is_smartstore_related(
-        self, query: str, chat_history: list[Message]
+        self, query: str, chat_history: list[Message], similar_faqs: list[dict]
     ) -> bool:
         messages = prompts.PT_QUESTION_VALIDATION_CHECK.format(
-            query=query, chat_history=self._format_chat_history(chat_history)
+            query=query,
+            chat_history=self._format_chat_history(chat_history),
+            context=similar_faqs,
         )
         response = await self.llm_service.generate_completion(
             messages=messages, temperature=0.1

@@ -25,10 +25,19 @@ def extract_tags_and_question(text: str) -> tuple[list[str], str]:
     return [], text.strip()
 
 
-def clean_answer(text: str) -> str:
+def clean(text: str) -> str:
     """
     FAQ 답변 텍스트에서 불필요한 부분을 제거하고 줄바꿈을 정리
     """
+    replace_patterns = [
+        ("\xa0", " "),
+        ("\u200b", ""),
+        ("\ufeff", ""),
+    ]
+
+    for pattern, replacement in replace_patterns:
+        text = text.replace(pattern, replacement)
+
     patterns_to_remove = [
         r"\n\n위 도움말이 도움이 되었나요\?.*",
         r"별점\d점",
@@ -55,18 +64,19 @@ def process_faq_data(input_path: str, output_path: str, encoding):
     processed_data = {}
 
     for question, answer in faq_dict.items():
-        tags, clean_question = extract_tags_and_question(question)
+        tags, q = extract_tags_and_question(question)
 
-        clean_answer_text = clean_answer(answer)
+        clean_question = clean(q)
+        clean_answer_text = clean(answer)
 
         tokens = encoding.encode(clean_question + "\n" + clean_answer_text)
 
         if len(tokens) > 8192:
             continue
 
-        processed_data[question] = {
+        processed_data[clean_question] = {
             "tags": tags,
-            "clean_question": clean_question,
+            "question": clean_question,
             "answer": clean_answer_text,
         }
 
@@ -84,7 +94,6 @@ if __name__ == "__main__":
     try:
         count = process_faq_data(input_path, output_path, encoding)
         print(f"처리 완료: {count}개의 FAQ가 {output_path}에 저장되었습니다.")
-
     except Exception as e:
         print(f"오류 발생: {str(e)}")
         sys.exit(1)

@@ -28,13 +28,22 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
             embedding_function=self.embedding_function,
         )
 
-    async def find_similar(self, query: str, limit: int = 3) -> list[dict]:
-        results = self.collection.query(query_texts=[query], n_results=limit)
+    async def find_similar(
+        self, query: str, limit: int = 3, similarity_threshold: float = 1.1
+    ) -> list[dict]:
+        results = self.collection.query(
+            query_texts=[query], n_results=limit, include=["metadatas", "distances"]
+        )
+
+        logger.info(f"results: {results}")
 
         similar_documents = []
         for i, (distance, metadata) in enumerate(
             zip(results["distances"][0], results["metadatas"][0])
         ):
+            if distance > similarity_threshold:
+                continue
+
             similar_documents.append(
                 {
                     "question": metadata["question"],
@@ -51,10 +60,10 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
         ids = []
 
         for i, faq in enumerate(faqs):
-            documents.append(f"{faq.clean_question}\n{faq.answer}")
+            documents.append(f"{faq.question}\n{faq.answer}")
             metadatas.append(
                 {
-                    "question": faq.clean_question,
+                    "question": faq.question,
                     "answer": faq.answer,
                     "tags": ",".join(faq.tags),
                 }
@@ -63,7 +72,9 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
 
         batch_size = 1000
         for i in range(0, len(documents), batch_size):
-            logger.info(f"Adding {i} ~ {i + batch_size} faqs")
+            logger.info(
+                f"Adding batch {i // batch_size + 1} of {len(documents) // batch_size + 1}"
+            )
             self.collection.add(
                 documents=documents[i : i + batch_size],
                 metadatas=metadatas[i : i + batch_size],

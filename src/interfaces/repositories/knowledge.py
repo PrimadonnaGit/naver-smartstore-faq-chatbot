@@ -5,7 +5,9 @@ from domain.knowledge import FAQ
 
 class KnowledgeBaseRepository(ABC):
     @abstractmethod
-    async def find_similar(self, query: str, limit: int = 3) -> list[dict]:
+    async def find_similar(
+        self, query: str, limit: int = 3, similarity_threshold: float = 0.5
+    ) -> list[dict]:
         pass
 
     @abstractmethod

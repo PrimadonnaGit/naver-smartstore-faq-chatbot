@@ -17,7 +17,7 @@ class ChatService(ABC):
 
     @abstractmethod
     async def is_smartstore_related(
-        self, message: str, chat_history: list[str]
+        self, query: str, chat_history: list[str], similar_faqs: list[dict]
     ) -> bool:
         pass
 

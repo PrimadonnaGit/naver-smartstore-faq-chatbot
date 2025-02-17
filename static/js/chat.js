@@ -120,7 +120,7 @@ class ChatUI {
                             currentBotMessage = null;
                             currentMessageText = null;
                         } else {
-                            await new Promise(resolve => setTimeout(resolve, 50));
+                            await new Promise(resolve => setTimeout(resolve, 20));
                             currentMessageText.textContent += data.content;
                             this.scrollToBottom();
                         }

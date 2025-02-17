@@ -21,7 +21,6 @@ def load_faq_data(file_path: str = "data/faq_processed.pkl") -> list[FAQ]:
     return [
         FAQ(
             question=question,
-            clean_question=data["clean_question"],
             answer=data["answer"],
             tags=data.get("tags", []),
         )
