@@ -29,13 +29,11 @@ class ChromaKnowledgeRepository(KnowledgeBaseRepository):
         )
 
     async def find_similar(
-        self, query: str, limit: int = 3, similarity_threshold: float = 1.1
+        self, query: str, limit: int = 3, similarity_threshold: float = 1.0
     ) -> list[dict]:
         results = self.collection.query(
             query_texts=[query], n_results=limit, include=["metadatas", "distances"]
         )
-
-        logger.info(f"results: {results}")
 
         similar_documents = []
         for i, (distance, metadata) in enumerate(

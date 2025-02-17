@@ -146,7 +146,10 @@ class SmartStoreChatService(ChatService):
         response = await self.llm_service.generate_completion(
             messages=messages, temperature=0.1
         )
-        return response.strip().lower() == "true"
+
+        is_related, confidence = response.strip().split(",")
+
+        return is_related == "true" if float(confidence) > 0.5 else True
 
     async def get_welcome_message(self) -> ChatResponse:
         return ChatResponse(message=WELCOME_MESSAGE)
