@@ -25,7 +25,13 @@ class ChatUI {
 
     createMessageElement(message, isUser = false) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} message-fade-in`;
+        messageDiv.className = `flex gap-2 message-fade-in ${isUser ? 'flex-row-reverse' : 'flex-row'}`;
+
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = `user-avatar ${isUser ? 'human' : 'bot-avatar'}`;
+        const avatarIcon = document.createElement('i');
+        avatarIcon.className = isUser ? 'fas fa-user' : 'fas fa-robot';
+        avatarDiv.appendChild(avatarIcon);
 
         const messageContent = document.createElement('div');
         messageContent.className = `max-w-[80%] rounded-2xl px-4 py-2 ${
@@ -39,13 +45,14 @@ class ChatUI {
         messageText.textContent = message;
 
         messageContent.appendChild(messageText);
+        messageDiv.appendChild(avatarDiv);
         messageDiv.appendChild(messageContent);
         return messageDiv;
     }
 
     createFollowUpElement(question) {
         const followUpDiv = document.createElement('div');
-        followUpDiv.className = 'flex justify-start mt-2';
+        followUpDiv.className = 'flex justify-start mt-2 ml-12';
 
         const content = document.createElement('div');
         content.className = 'bg-primary-50 text-primary-600 rounded-lg px-4 py-2 text-sm cursor-pointer hover:bg-primary-100 transition-colors duration-200';
@@ -63,18 +70,15 @@ class ChatUI {
         return followUpDiv;
     }
 
-    getOrCreateSessionId() {
-        let sessionId = localStorage.getItem('chat_session_id');
-        if (!sessionId) {
-            sessionId = crypto.randomUUID();
-            localStorage.setItem('chat_session_id', sessionId);
-        }
-        return sessionId;
-    }
-
     createLoadingElement() {
         const loadingDiv = document.createElement('div');
-        loadingDiv.className = 'flex justify-start message-fade-in';
+        loadingDiv.className = 'flex gap-2 message-fade-in';
+
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'user-avatar bot-avatar';
+        const avatarIcon = document.createElement('i');
+        avatarIcon.className = 'fas fa-robot';
+        avatarDiv.appendChild(avatarIcon);
 
         const loadingContent = document.createElement('div');
         loadingContent.className = 'bg-gray-100 text-gray-900 rounded-2xl rounded-bl-none px-4 py-2';
@@ -89,6 +93,7 @@ class ChatUI {
         }
 
         loadingContent.appendChild(dots);
+        loadingDiv.appendChild(avatarDiv);
         loadingDiv.appendChild(loadingContent);
         return loadingDiv;
     }
