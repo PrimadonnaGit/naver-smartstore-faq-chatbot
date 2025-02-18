@@ -28,4 +28,4 @@ redis-down:
 	docker rm redis-chat
 
 run:
-	PYTHONPATH=src poetry run uvicorn app.main:app --reload
+	PYTHONPATH=src poetry run uvicorn src.main:app --reload
