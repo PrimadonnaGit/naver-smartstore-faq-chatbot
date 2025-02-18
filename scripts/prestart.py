@@ -4,6 +4,12 @@ import sys
 
 import tiktoken
 
+from core.logging import setup_logger
+from domain.knowledge import NaverFAQ
+from repositories.knowledge import ChromaKnowledgeRepository
+
+logger = setup_logger(__name__)
+
 
 def extract_tags_and_question(text: str) -> tuple[list[str], str]:
     """
@@ -54,15 +60,20 @@ def clean(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", cleaned_text).strip()
 
 
-def process_faq_data(input_path: str, output_path: str, encoding):
+async def process_and_load_to_chroma(
+    input_path: str = "data/faq.pkl", processed_path: str = "data/faq_processed.pkl"
+):
     """
-    FAQ 데이터를 전처리하여 저장
+    FAQ 데이터를 전처리하고 ChromaDB에 로드
     """
+    logger.info("Starting FAQ data processing and loading")
+
+    encoding = tiktoken.encoding_for_model("text-embedding-3-small")
+
     with open(input_path, "rb") as f:
         faq_dict = pickle.load(f)
 
     processed_data = {}
-
     for question, answer in faq_dict.items():
         tags, q = extract_tags_and_question(question)
 
@@ -80,20 +91,33 @@ def process_faq_data(input_path: str, output_path: str, encoding):
             "answer": clean_answer_text,
         }
 
-    with open(output_path, "wb") as f:
+    with open(processed_path, "wb") as f:
         pickle.dump(processed_data, f)
 
+    logger.info(f"Processed {len(processed_data)} FAQs")
+
+    faqs = [
+        NaverFAQ(
+            question=question,
+            answer=metadata["answer"],
+            tags=metadata.get("tags", []),
+        )
+        for question, metadata in processed_data.items()
+    ]
+
+    knowledge_repo = ChromaKnowledgeRepository()
+    await knowledge_repo.bulk_add_faqs(faqs)
+
+    logger.info("FAQ data successfully loaded into ChromaDB")
     return len(processed_data)
 
 
 if __name__ == "__main__":
-    input_path = "data/faq.pkl"
-    output_path = "data/faq_processed.pkl"
-    encoding = tiktoken.encoding_for_model("text-embedding-3-small")
+    import asyncio
 
     try:
-        count = process_faq_data(input_path, output_path, encoding)
-        print(f"처리 완료: {count}개의 FAQ가 {output_path}에 저장되었습니다.")
+        count = asyncio.run(process_and_load_to_chroma())
+        print(f"처리 및 로드 완료: {count}개의 FAQ가 ChromaDB에 저장되었습니다.")
     except Exception as e:
-        print(f"오류 발생: {str(e)}")
+        logger.error(f"Error during processing and loading: {str(e)}")
         sys.exit(1)

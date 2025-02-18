@@ -18,7 +18,7 @@ setup:
 	@echo "환경 설정이 완료되었습니다. .env 파일에 OPENAI_API_KEY를 설정해주세요."
 
 preprocess:
-	poetry run python scripts/preprocessing.py
+	PYTHONPATH=src poetry run python scripts/preprocessing.py
 
 redis-up:
 	docker run --name redis-chat -p 6379:6379 -d redis:alpine
@@ -28,4 +28,4 @@ redis-down:
 	docker rm redis-chat
 
 run:
-	poetry run uvicorn src.main:app --reload
+	PYTHONPATH=src poetry run uvicorn app.main:app --reload
