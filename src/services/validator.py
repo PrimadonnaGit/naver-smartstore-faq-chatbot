@@ -1,5 +1,6 @@
-from typing import List
+import asyncio
 
+from core.decorators import log_execution_time
 from core.prompts import prompts, PromptTemplate
 from domain.chat import Message
 from domain.validation import ValidationResult, ValidationStrategy
@@ -12,54 +13,54 @@ class SmartStoreQuestionValidator(QuestionValidatorService):
     def __init__(self, llm_service: LLMService):
         self.llm_service = llm_service
 
+    @log_execution_time
     async def validate_question(
-        self, query: str, chat_history: List[Message], similar_faqs: List[dict]
+        self, query: str, chat_history: list[Message], similar_faqs: list[dict]
     ) -> ValidationResult:
-        # 1단계: 직접적 관련성 검사
-        direct_result = await self._execute_strategy(
-            prompts.PT_DIRECT_VALIDATION,
-            query,
-            chat_history,
-            similar_faqs,
-            ValidationStrategy.DIRECT,
-        )
+        validation_tasks = [
+            self._execute_strategy(
+                prompts.PT_DIRECT_VALIDATION,
+                query,
+                chat_history,
+                similar_faqs,
+                ValidationStrategy.DIRECT,
+            ),
+            self._execute_strategy(
+                prompts.PT_INDIRECT_VALIDATION,
+                query,
+                chat_history,
+                similar_faqs,
+                ValidationStrategy.INDIRECT,
+            ),
+        ]
 
-        if direct_result.confidence > 0.7:
-            return direct_result
+        results = await asyncio.gather(*validation_tasks)
 
-        # 2단계: 간접적 관련성 검사
-        indirect_result = await self._execute_strategy(
-            prompts.PT_INDIRECT_VALIDATION,
-            query,
-            chat_history,
-            similar_faqs,
-            ValidationStrategy.INDIRECT,
-        )
+        # 가중치를 적용한 최종 점수 계산
+        weighted_results = []
+        for result in results:
+            weighted_confidence = result.confidence * result.strategy.weight
+            weighted_results.append(
+                ValidationResult(
+                    is_related=result.is_related,
+                    confidence=weighted_confidence,
+                    strategy=result.strategy,
+                )
+            )
 
-        if indirect_result.confidence > 0.5:
-            return indirect_result
+        # 가중치가 적용된 결과 중 최고 점수 선택
+        best_result = max(weighted_results, key=lambda x: x.confidence)
 
-        # 3단계: 의도 분석
-        intent_result = await self._execute_strategy(
-            prompts.PT_INTENT_VALIDATION,
-            query,
-            chat_history,
-            similar_faqs,
-            ValidationStrategy.INTENT,
-        )
-
-        # 최종 판단
-        results = [direct_result, indirect_result, intent_result]
-        best_result = max(results, key=lambda x: x.confidence)
-
+        # 최종 결과의 is_related 재계산 (가중치 적용 후)
+        best_result.is_related = best_result.confidence > 0.5
         return best_result
 
     async def _execute_strategy(
         self,
         prompt_template: PromptTemplate,
         query: str,
-        chat_history: List[Message],
-        similar_faqs: List[dict],
+        chat_history: list[Message],
+        similar_faqs: list[dict],
         strategy: ValidationStrategy,
     ) -> ValidationResult:
         messages = prompt_template.format(
@@ -70,21 +71,15 @@ class SmartStoreQuestionValidator(QuestionValidatorService):
 
         response = await self.llm_service.generate_completion(messages=messages)
 
-        # 응답 파싱
         try:
             confidence = float(response.split(",")[1].strip())
             is_related = confidence > 0.5
-            reasoning = (
-                response.split(",")[2].strip() if len(response.split(",")) > 2 else ""
-            )
-        except:
+        except Exception as e:
             confidence = 0.0
             is_related = False
-            reasoning = "Failed to parse response"
 
         return ValidationResult(
             is_related=is_related,
             confidence=confidence,
             strategy=strategy,
-            reasoning=reasoning,
         )

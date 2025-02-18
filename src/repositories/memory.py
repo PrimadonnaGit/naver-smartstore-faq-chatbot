@@ -1,6 +1,7 @@
 import json
 
 from core.config import settings
+from core.decorators import log_execution_time
 from domain.chat import Message
 from infrastructure.redis.client import RedisClient
 from interfaces.repositories.memory import ChatMemoryRepository
@@ -29,6 +30,7 @@ class RedisChatMemoryRepository(ChatMemoryRepository):
             role=data["role"],
         )
 
+    @log_execution_time
     async def save_message(self, session_id: str, message: Message) -> None:
         async with RedisClient.get_connection() as redis:
             key = self._get_key(session_id)
@@ -39,6 +41,7 @@ class RedisChatMemoryRepository(ChatMemoryRepository):
                 await pipe.expire(key, self.message_ttl)
                 await pipe.execute()
 
+    @log_execution_time
     async def get_recent_messages(
         self, session_id: str, limit: int = 10
     ) -> list[Message]:

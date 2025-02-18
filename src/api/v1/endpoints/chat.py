@@ -29,7 +29,7 @@ async def chat(
     채팅 메시지를 처리하고 스트리밍 응답을 반환합니다.
     """
     try:
-        response_generator = chat_service.process_message(
+        response_generator = chat_service.generate_chat_response(
             session_id=session_id, message=request.message
         )
 
@@ -52,7 +52,9 @@ async def chat(
 async def welcome(
     chat_service: Annotated[SmartStoreChatService, Depends(get_chat_service)],
 ) -> WelcomeResponse:
-    """웰컴 메시지와 새로운 세션 ID를 반환합니다."""
+    """
+    웰컴 메시지와 새로운 세션 ID를 반환합니다.
+    """
     try:
         response = await chat_service.get_welcome_message()
         session_id = str(uuid4())

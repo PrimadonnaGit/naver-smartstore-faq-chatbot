@@ -6,7 +6,7 @@ from domain.chat import ChatResponse
 
 class ChatService(ABC):
     @abstractmethod
-    async def process_message(
+    async def generate_chat_response(
         self, session_id: str, message: str
     ) -> AsyncGenerator[ChatResponse, None]:
         pass
@@ -16,7 +16,7 @@ class ChatService(ABC):
         pass
 
     @abstractmethod
-    async def is_smartstore_related(
+    async def is_smartstore_related_question(
         self, query: str, chat_history: list[str], similar_faqs: list[dict]
     ) -> bool:
         pass

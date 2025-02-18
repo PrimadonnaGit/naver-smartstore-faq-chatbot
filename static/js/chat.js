@@ -7,6 +7,7 @@ class ChatUI {
         this.sendButton = document.getElementById('send-button');
 
         this.sessionId = null;
+        this.isLoading = false;
 
         this.setupEventListeners();
         this.loadWelcomeMessage();
@@ -24,7 +25,7 @@ class ChatUI {
 
     createMessageElement(message, isUser = false) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+        messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} message-fade-in`;
 
         const messageContent = document.createElement('div');
         messageContent.className = `max-w-[80%] rounded-2xl px-4 py-2 ${
@@ -71,13 +72,41 @@ class ChatUI {
         return sessionId;
     }
 
+    createLoadingElement() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'flex justify-start message-fade-in';
+
+        const loadingContent = document.createElement('div');
+        loadingContent.className = 'bg-gray-100 text-gray-900 rounded-2xl rounded-bl-none px-4 py-2';
+
+        const dots = document.createElement('div');
+        dots.className = 'typing-indicator';
+
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'typing-dot';
+            dots.appendChild(dot);
+        }
+
+        loadingContent.appendChild(dots);
+        loadingDiv.appendChild(loadingContent);
+        return loadingDiv;
+    }
 
     async sendMessage() {
         const message = this.messageInput.value.trim();
-        if (!message) return;
+        if (!message || this.isLoading) return;
+
+        this.isLoading = true;
+        this.sendButton.disabled = true;
+        this.messageInput.disabled = true;
 
         this.appendMessage(message, true);
         this.messageInput.value = '';
+
+        const loadingElement = this.createLoadingElement();
+        this.chatContainer.appendChild(loadingElement);
+        this.scrollToBottom();
 
         try {
             const response = await fetch(this.chatApiUrl, {
@@ -91,6 +120,7 @@ class ChatUI {
 
             let currentBotMessage = null;
             let currentMessageText = null;
+            let firstResponseReceived = false;
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -105,6 +135,11 @@ class ChatUI {
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         const data = JSON.parse(line.slice(6));
+
+                        if (!firstResponseReceived && data.type !== 'follow_up') {
+                            firstResponseReceived = true;
+                            loadingElement.remove();
+                        }
 
                         if (!currentBotMessage && data.type !== 'follow_up') {
                             currentBotMessage = this.createMessageElement('', false);
@@ -129,7 +164,13 @@ class ChatUI {
             }
         } catch (error) {
             console.error('Error:', error);
+            loadingElement.remove();
             this.appendMessage('오류가 발생했습니다. 다시 시도해주세요.', false);
+        } finally {
+            this.isLoading = false;
+            this.sendButton.disabled = false;
+            this.messageInput.disabled = false;
+            this.messageInput.focus();
         }
     }
 
@@ -151,7 +192,7 @@ class ChatUI {
             }
 
             const data = await response.json();
-            this.sessionId = data.session_id; // 세션 ID 저장
+            this.sessionId = data.session_id;
             this.appendMessage(data.content, false);
         } catch (error) {
             console.error('Error:', error);
