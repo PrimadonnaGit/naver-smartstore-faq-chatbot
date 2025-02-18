@@ -11,6 +11,7 @@ help:
 
 install:
 	poetry install
+    poetry shell
 
 setup:
 	mkdir -p data

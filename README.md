@@ -20,12 +20,12 @@ make install
 make setup
 ```
 
-3. Setup `OPEN_API_KEY`
+3. Setup `OPENAI_API_KEY`
 ```bash
 vi .env.local
 
 # .env.local
-OPEN_API_KEY=YOUR_OPEN_API_KEY
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
 4. Setup Redis
@@ -45,4 +45,6 @@ make run
 ```
 
 7. Test
-- http://localhost:8000 으로 접속하여 챗봇 사용
+- 서버가 실행되면 http://localhost:8000 에서 챗봇을 테스트 하실 수 있습니다.
+
+![img.png](assets/example_home_image.jpeg)
