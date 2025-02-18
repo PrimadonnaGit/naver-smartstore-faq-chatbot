@@ -16,18 +16,13 @@ logger = setup_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Service is starting up")
-    try:
-        if not os.path.exists(settings.CHROMA_PERSIST_DIRECTORY):
-            logger.warning(
-                "ChromaDB persistence directory not found. "
-                "Please run 'make preprocess' first to process and load the data."
-            )
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {str(e)}")
-        raise
 
+    if not os.path.exists(settings.CHROMA_PERSIST_DIRECTORY):
+        logger.error(
+            "ChromaDB persistence directory not found. "
+            "Please run 'make pre-start' first to process and load the data."
+        )
     yield
-
     logger.info("Service is shutting down ...")
 
 

@@ -36,7 +36,7 @@ make redis-up
 5. Data Preprocessing
 - 네이버 스마트스토어 pickle 파일을 프로젝트의 `data/faq.pkl` 위치에 저장하고 아래 명령어 실행합니다.
 ```bash
-make preprocess
+make pre-start
 ```
 
 6. Run
