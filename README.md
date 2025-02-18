@@ -47,4 +47,4 @@ make run
 7. Test
 - 서버가 실행되면 http://localhost:8000 에서 챗봇을 테스트 하실 수 있습니다.
 
-![img.png](assets/example_home_image.jpeg)
+![img.png](assets/example_home_image.png)
